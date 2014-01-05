@@ -377,10 +377,15 @@ namespace SteamTrade
         /// </summary>
         public bool SendMessage (string msg)
         {
-            bool ok = session.SendMessageWebCmd(msg);
+            //bool ok = session.SendMessageWebCmd(msg);
 
-            if (!ok)
-                throw new TradeException ("The web command to send the trade message failed.");
+            while (!session.SendMessageWebCmd(msg))
+            {
+                System.Threading.Thread.Sleep(1000);
+            }
+            //if (!ok)
+            //    return false;
+                //throw new TradeException ("The web command to send the trade message failed.");
 
             return true;
         }
@@ -446,7 +451,7 @@ namespace SteamTrade
             if (status.trade_status == 3)
             {
                 if (OnError != null)
-                    OnError ("Trade was cancelled by other user.");
+                    OnError ("Trade was cancelled by other user");
 
                 OtherUserCancelled = true;
                 return otherDidSomething;
@@ -553,7 +558,6 @@ namespace SteamTrade
         void HandleTradeVersionChange(TradeStatus status)
         {
             CopyNewAssets(OtherOfferedItems, status.them.GetAssets());
-
             CopyNewAssets(steamMyOfferedItems, status.me.GetAssets());
         }
 

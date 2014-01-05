@@ -15,6 +15,8 @@ namespace SteamBot
 {
     public class Bot
     {
+        public string MyLoginKey;
+        public bool inTF2 = false;
         public string BotControlClass;
         // If the bot is logged in fully or not.  This is only set
         // when it is.
@@ -276,11 +278,23 @@ namespace SteamBot
             SteamClient.Send(gamePlaying);
 
             CurrentGame = id;
+            if (id == 0)
+                inTF2 = false;
         }
 
         void HandleSteamMessage (CallbackMsg msg)
         {
-            log.Debug(msg.ToString());
+            if (msg.ToString() != "SteamKit2.SteamFriends+PersonaStateCallback")
+                log.Debug(msg.ToString());
+
+            msg.Handle<SteamGameCoordinator.MessageCallback>(callback =>
+            {
+                if (callback.EMsg == 4004)
+                {
+                    inTF2 = true;
+                    log.Warn("Current AppID is " + CurrentGame);
+                }
+            });
 
             #region Login
             msg.Handle<SteamClient.ConnectedCallback> (callback =>
@@ -308,6 +322,11 @@ namespace SteamBot
                     log.Error ("Login Error: " + callback.Result);
                 }
 
+                if (callback.Result == EResult.OK)
+                {
+                    MyLoginKey = callback.WebAPIUserNonce;
+                }
+
                 if (callback.Result == EResult.AccountLogonDenied)
                 {
                     log.Interface ("This account is SteamGuard enabled. Enter the code via the `auth' command.");
@@ -332,7 +351,7 @@ namespace SteamBot
             {
                 while (true)
                 {
-                    bool authd = SteamWeb.Authenticate(callback, SteamClient, out sessionId, out token);
+                    bool authd = SteamWeb.Authenticate(callback, SteamClient, out sessionId, out token, MyLoginKey);
                     if (authd)
                     {
                         log.Success ("User Authenticated!");
@@ -358,7 +377,7 @@ namespace SteamBot
                 }
 
                 SteamFriends.SetPersonaName (DisplayNamePrefix+DisplayName);
-                SteamFriends.SetPersonaState (EPersonaState.Online);
+                SteamFriends.SetPersonaState (EPersonaState.LookingToTrade);
 
                 log.Success ("Steam Bot Logged In Completely!");
 
@@ -415,6 +434,7 @@ namespace SteamBot
                     GetUserHandler(callback.Sender).OnMessage(callback.Message, type);
                 }
             });
+
             #endregion
 
             #region Group Chat
@@ -660,11 +680,11 @@ namespace SteamBot
                       ex);
                 log.Error(s);
 
-                log.Info("This bot died. Stopping it..");
+                log.Info("This bot died. Stopping it.");
                 //backgroundWorker.RunWorkerAsync();
                 //Thread.Sleep(10000);
                 StopBot();
-                //StartBot();
+                StartBot();
             }
 
             log.Dispose();

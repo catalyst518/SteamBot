@@ -1,3 +1,5 @@
+#define DEBUG_TRADE_MANAGER
+
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -287,7 +289,7 @@ namespace SteamTrade
                     {
                         // TODO: find a new way to do this w/o the trade events
                         //if (OnError != null)
-                        //    OnError("Error Polling Trade: " + e);
+                            //OnError("Error Polling Trade: " + e);
                         
                         // ok then we should stop polling...
                         IsTradeThreadRunning = false;
